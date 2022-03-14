@@ -1,0 +1,1 @@
+web: gunicorn masked_face_and_mask_detection:app
