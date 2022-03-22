@@ -162,21 +162,18 @@ if choice == "Take Snapshot":
     class VideoProcessor2(VideoProcessorBase):
         frame_lock: threading.Lock
         in_image: Union[np.ndarray, None]
-        out_image: Union[np.ndarray, None]
 
         def __init__(self) -> None:
             self.frame_lock = threading.Lock()
             self.in_image = None
-            self.out_image = None
 
-        def transform(self, frame: av.VideoFrame) -> np.ndarray:
-            in_image = frame.to_ndarray(format="bgr24")
-            out_image = in_image[:, ::-1, :]
+        def recv(self, frame: av.VideoFrame) -> np.ndarray:
+            frame = frame.to_ndarray(format="bgr24")
+            in_image = cv2.flip(frame, 1)
 
             with self.frame_lock:
                 self.in_image = in_image
-                self.out_image = out_image
-            return out_image
+            return av.VideoFrame.from_ndarray(frame, format="bgr24")
 
 
     ctx = webrtc_streamer(key="snapshot",
@@ -190,10 +187,9 @@ if choice == "Take Snapshot":
         if st.button("Snapshot"):
             with ctx.video_processor.frame_lock:
                 in_image = ctx.video_processor.in_image
-                out_image = ctx.video_processor.out_image
 
-            if in_image is not None and out_image is not None:
-                image = cv2.cvtColor(out_image, cv2.COLOR_BGR2RGB)
+            if in_image is not None:
+                image = cv2.cvtColor(in_image, cv2.COLOR_BGR2RGB)
                 # st.write("Input image:")
                 # st.image(in_image, channels="BGR")
                 # st.write("Output image:")
@@ -232,6 +228,7 @@ if choice == "Take Snapshot":
                     st.markdown('<p class="font"><b>Wearing %s</b></p>' % (label), unsafe_allow_html=True)
             else:
                 st.warning("No snapshot available yet. Please take a snapshot.")
+
 
 if choice == "About":
     st.markdown(""" <style> .font {
