@@ -94,7 +94,7 @@ def dnn_extract_face(img):
                 #             cv2.putText(frame,'',(50,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
         # else:
         #     return None
-    return face_list, face, label_list, predition, predIndex
+    return face_list, face, label_list
 
 
 @st.cache(allow_output_mutation=True)
@@ -163,7 +163,8 @@ if choice == "Upload Image":
         # with col1:
         st.image(image_file, width=250, caption='Uploaded Image.')
         img_array = np.array(image)
-        img_array, x, label, y, z = dnn_extract_face(img_array)
+        # img_array, x, label, y, z = dnn_extract_face(img_array)
+        img_array, x, label = dnn_extract_face(img_array)
         if not img_array:
             st.warning("No face is detected.")
         else:
@@ -241,7 +242,8 @@ if choice == "Take Snapshot":
                 # with col1:
                 st.image(image, width=400, caption='Snapshot Image.')
                 img_array = np.array(image)
-                img_array, x, label, y, z = dnn_extract_face(img_array)
+                # img_array, x, label, y, z = dnn_extract_face(img_array)
+                img_array, x, label = dnn_extract_face(img_array)
                 if not img_array:
                     st.warning("No face is detected.")
                 else:
@@ -306,7 +308,8 @@ if choice == "Real Time Detection":
             frame = frame.to_ndarray(format="bgr24")
             frame = cv2.flip(frame,1)
             # frame = frame[:, ::-1, :]
-            x, face, l, predition, predIndex = dnn_extract_face(frame)
+            # x, face, l, predition, predIndex = dnn_extract_face(frame)
+            x, face, l = dnn_extract_face(frame)
             if type(face) is np.ndarray:
                 face = cv2.resize(face, (350, 350))
                 face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
@@ -321,10 +324,10 @@ if choice == "Real Time Detection":
                 if (predition[predIndex] > 0.95):
                     text = "{:.2f}%".format(predition[predIndex] * 100)
                     name = str(faces[predIndex]) + ' ' + str(text)
-                    cv2.putText(frame, name, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
+                    cv2.putText(frame, name, (30, 40), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
                     result.append(Detection(Name=faces[predIndex], Prob=float(predition[predIndex])))
                 else:
-                    cv2.putText(frame, '', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
+                    cv2.putText(frame, '', (30, 40), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
             else:
                 cv2.putText(frame, 'No Face Detected :(', (30, 40), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
             #             cv2.putText(frame,'',(50,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
