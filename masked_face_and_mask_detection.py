@@ -29,21 +29,27 @@ load_css('css/styles.css')
 def dnn_extract_face(img):
     net = cv2.dnn.readNetFromCaffe("deploy.prototxt", "res10_300x300_ssd_iter_140000.caffemodel")
     (height, width) = img.shape[:2]
-    blob = cv2.dnn.blobFromImage(cv2.resize(img,(300,300)),1.0,(300,300),(104.0,177.0,123.0))
+    blob = cv2.dnn.blobFromImage(cv2.resize(img, (350, 350)), 1.0, (300, 300), (104.0, 177.0, 123.0))
     net.setInput(blob)
     detections = net.forward()
-    for i in range(0, detections.shape[1]):
-        confidence = detections[0,0,i,2]
+    # detections = np.squeeze(net.forward())
+    face = None
+    predition = None
+    predIndex = None
+    face_list = []
+    label_list = []
+    for i in range(0, detections.shape[2]):
+        confidence = detections[0, 0, i, 2]
 #         print("confidence ",confidence)
         if confidence > 0.5:
-            box = detections[0,0,i,3:7] * np.array([width,height,width,height])
+            box = detections[0, 0, i, 3:7] * np.array([width, height, width, height])
             (startX, startY, endX, endY) = box.astype("int")
             # text = "{:.2f}%".format(confidence * 100)
             # y = startY - 10 if startY - 10 > 10 else startY + 10
             # cv2.rectangle(img, (startX, startY), (endX, endY), (255, 255, 0), 2)
             # cv2.putText(img, text, (startX, y),
             #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            face = img[startY:endY,startX:endX]
+            face = img[startY:endY, startX:endX]
 
             img2 = cv2.resize(face, (350, 350))
             img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
@@ -57,11 +63,38 @@ def dnn_extract_face(img):
             color = (0, 255, 0) if label == "Mask" else (255, 235, 0)
             label = "{}: {:.1f}%".format(label, max(mask, withoutMask) * 100)
             cv2.putText(img, label, (startX, startY - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.70, color, 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
             cv2.rectangle(img, (startX, startY), (endX, endY), color, 2)
-            return face
-        else:
-            return None
+            # cv2.rectangle(img, (startX, endY + 5), (endX, endY), color, cv2.FILLED)
+            # return face
+            face_list.append(face)
+            label_list.append(label)
+
+            if choice == "Real Time Detection":
+                if type(face) is np.ndarray:
+                    face_new = cv2.resize(face, (350, 350))
+                    face_new = cv2.cvtColor(face_new, cv2.COLOR_BGR2RGB)
+                    im = Image.fromarray(face_new, 'RGB')
+                    img_array = np.array(im)
+                    img_array = np.expand_dims(img_array, axis=0)
+                    pred = model1.predict(img_array)
+                    predition = np.squeeze(pred)
+                    predIndex = np.argmax(predition)
+
+                    # name = 'None matching'
+                    if (predition[predIndex] > 0.95):
+                        text = "{:.2f}%".format(predition[predIndex] * 100)
+                        name = str(faces[predIndex]) + ' ' + str(text)
+                        # cv2.putText(img, name, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
+                        cv2.putText(img, name, (startX - 20, endY + 22), cv2.FONT_HERSHEY_COMPLEX, 0.8, color, 2)
+                    else:
+                        cv2.putText(img, '', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 255, 255), 2)
+                # else:
+                #     cv2.putText(img, 'No Face Detected :(', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+                #             cv2.putText(frame,'',(50,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
+        # else:
+        #     return None
+    return face_list, face, label_list, predition, predIndex
 
 
 @st.cache(allow_output_mutation=True)
@@ -115,7 +148,7 @@ choice = option_menu("Masked Face Recognition App", ["Upload Image", "Take Snaps
                          "nav-link": {"font-size": "16px", "text-align": "left", "margin": "0px",
                                       "--hover-color": "#ff2d00"},
                          "nav-link-selected": {"background-color": "#02ab21"},
-                     }
+                        }
                      )
 
 if choice == "Upload Image":
@@ -124,38 +157,42 @@ if choice == "Upload Image":
 
     if image_file is not None:
         image = Image.open(image_file)
+        i = 1
 
-        col1, col2 = st.columns([0.2, 0.5])
-        with col1:
-            st.image(image_file, width=250, caption='Uploaded Image.')
+        # col1, col2 = st.columns([0.2, 0.5])
+        # with col1:
+        st.image(image_file, width=250, caption='Uploaded Image.')
         img_array = np.array(image)
-        img_array = dnn_extract_face(img_array)
-        if img_array is None:
+        img_array, x, label, y, z = dnn_extract_face(img_array)
+        if not img_array:
             st.warning("No face is detected.")
         else:
-            img_array = Image.fromarray(img_array)
-            imResize = img_array.resize((350, 350), Image.ANTIALIAS)
-            # imResize.save('predict.jpg', 'JPEG', quality=90)
+            for images in img_array:
+                img_array = Image.fromarray(images)
+                imResize = img_array.resize((350, 350), Image.ANTIALIAS)
+                # imResize.save('predict.jpg', 'JPEG', quality=90)
 
-            predictimg = np.array(imResize)
-            predictimg = predictimg / 255.0
-            predictimg = np.expand_dims(predictimg, axis=0)
-            predition = model1.predict(predictimg)
-            predition = np.squeeze(predition)
-            predIndex = np.argmax(predition)
-            st.markdown(""" <style> .font {
-                font-size: 50px; font-family: ''; color: white;} 
-                </style> """, unsafe_allow_html=True)
-            with col2:
-                st.image(imResize, width=200, caption='Extracted Face.')
-            st.markdown('<p class="font"><b>You are %s (Accuracy %.2f%%)</b></p>' % (
-            faces[predIndex], predition[predIndex] * 100), unsafe_allow_html=True)
+                predictimg = np.array(imResize)
+                predictimg = predictimg / 255.0
+                predictimg = np.expand_dims(predictimg, axis=0)
+                predition = model1.predict(predictimg)
+                predition = np.squeeze(predition)
+                predIndex = np.argmax(predition)
+                st.markdown(""" <style> .font {
+                    font-size: 46px; font-family: ''; color: white;} 
+                    </style> """, unsafe_allow_html=True)
+                # with col2:
+                st.image(imResize, width=200, caption='Extracted Face '+str(i))
+                st.markdown('<p class="font"><b>You are %s (Accuracy %.2f%%)</b></p>' % (
+                faces[predIndex], predition[predIndex] * 100), unsafe_allow_html=True)
 
-            preds = model2.predict(predictimg)
-            for pred in preds:
-                (mask, withoutMask) = pred
-            label = "a mask" if mask > withoutMask else "no mask"
-            st.markdown('<p class="font"><b>Wearing %s</b></p>' % (label), unsafe_allow_html=True)
+                # preds = model2.predict(predictimg)
+                # for pred in preds:
+                #     (mask, withoutMask) = pred
+                # label = "a mask" if mask > withoutMask else "no mask"
+                st.markdown('<p class="font"><b>Wearing %s</b></p>' % (label[i-1]), unsafe_allow_html=True)
+                st.markdown('-----------------------------------------------', unsafe_allow_html=True)
+                i += 1
 
 
 if choice == "Take Snapshot":
@@ -180,8 +217,13 @@ if choice == "Take Snapshot":
                           mode=WebRtcMode.SENDRECV,
                           rtc_configuration=RTC_CONFIGURATION,
                           video_processor_factory=VideoProcessor2,
-                          media_stream_constraints={"video": True, "audio": False},
-                          async_processing=True)
+                          # media_stream_constraints={"video": True, "audio": False},
+                          media_stream_constraints={
+                              "video": {"width": 400, "ideal": 1200, "max": 1920},
+                              "audio": False
+                          },
+                          async_processing=True
+                          )
 
     if ctx.video_processor:
         if st.button("Snapshot"):
@@ -190,42 +232,46 @@ if choice == "Take Snapshot":
 
             if in_image is not None:
                 image = cv2.cvtColor(in_image, cv2.COLOR_BGR2RGB)
+                i = 1
                 # st.write("Input image:")
                 # st.image(in_image, channels="BGR")
                 # st.write("Output image:")
                 # st.image(out_image, channels="BGR")
-                col1, col2 = st.columns([0.3, 0.5])
-                with col1:
-                    st.image(image, width=400, caption='Snapshot Image.')
+                # col1, col2 = st.columns([0.3, 0.5])
+                # with col1:
+                st.image(image, width=400, caption='Snapshot Image.')
                 img_array = np.array(image)
-                img_array = dnn_extract_face(img_array)
-                if img_array is None:
+                img_array, x, label, y, z = dnn_extract_face(img_array)
+                if not img_array:
                     st.warning("No face is detected.")
                 else:
-                    img_array = Image.fromarray(img_array)
-                    imResize = img_array.resize((350, 350), Image.ANTIALIAS)
-                    # imResize.save('predict.jpg', 'JPEG', quality=90)
+                    for images in img_array:
+                        img_array = Image.fromarray(images)
+                        imResize = img_array.resize((350, 350), Image.ANTIALIAS)
+                        # imResize.save('predict.jpg', 'JPEG', quality=90)
 
-                    predictimg = np.array(imResize)
-                    predictimg = predictimg / 255.0
-                    predictimg = np.expand_dims(predictimg, axis=0)
+                        predictimg = np.array(imResize)
+                        predictimg = predictimg / 255.0
+                        predictimg = np.expand_dims(predictimg, axis=0)
 
-                    predition = model1.predict(predictimg)
-                    predition = np.squeeze(predition)
-                    predIndex = np.argmax(predition)
-                    st.markdown(""" <style> .font {
-                                    font-size: 50px; font-family: ''; color: white;} 
-                                    </style> """, unsafe_allow_html=True)
-                    with col2:
-                        st.image(imResize, width=200, caption='Extracted Face.')
-                    st.markdown('<p class="font"><b>You are %s (Accuracy %.2f%%)</b></p>' % (
-                    faces[predIndex], predition[predIndex] * 100), unsafe_allow_html=True)
+                        predition = model1.predict(predictimg)
+                        predition = np.squeeze(predition)
+                        predIndex = np.argmax(predition)
+                        st.markdown(""" <style> .font {
+                                        font-size: 46px; font-family: ''; color: white;} 
+                                        </style> """, unsafe_allow_html=True)
+                        # with col2:
+                        st.image(imResize, width=200, caption='Extracted Face '+str(i))
+                        st.markdown('<p class="font"><b>You are %s (Accuracy %.2f%%)</b></p>' % (
+                        faces[predIndex], predition[predIndex] * 100), unsafe_allow_html=True)
 
-                    preds = model2.predict(predictimg)
-                    for pred in preds:
-                        (mask, withoutMask) = pred
-                    label = "a mask" if mask > withoutMask else "no mask"
-                    st.markdown('<p class="font"><b>Wearing %s</b></p>' % (label), unsafe_allow_html=True)
+                        # preds = model2.predict(predictimg)
+                        # for pred in preds:
+                        #     (mask, withoutMask) = pred
+                        # label = "a mask" if mask > withoutMask else "no mask"
+                        st.markdown('<p class="font"><b>Wearing %s</b></p>' % (label[i-1]), unsafe_allow_html=True)
+                        st.markdown('-----------------------------------------------', unsafe_allow_html=True)
+                        i += 1
             else:
                 st.warning("No snapshot available yet. Please take a snapshot.")
 
@@ -236,7 +282,7 @@ if choice == "About":
     </style> """, unsafe_allow_html=True)
     st.markdown('<p class="font"><b>About</b></p>', unsafe_allow_html=True)
     st.write(
-        "This is a Masked Face Recognition Application. You can detect your face by Uploading An Image or by Taking A Snapshot. You can also detect your face real time by using the Real Time Detection.")
+        "This is a Masked Face Recognition Application. You can detect your face by Uploading an Image or by Taking a Snapshot. You can also detect your face in real time by using the Real Time Detection. This application can also detect if you are wearing a mask or not. This system can detect and recognize multiple faces at a time.")
 
 if choice == "Real Time Detection":
     st.markdown('<h2 align="center">Real Time Masked Face Recognition</h2>', unsafe_allow_html=True)
@@ -260,28 +306,28 @@ if choice == "Real Time Detection":
             frame = frame.to_ndarray(format="bgr24")
             frame = cv2.flip(frame,1)
             # frame = frame[:, ::-1, :]
-            face = dnn_extract_face(frame)
+            x, face, l, predition, predIndex = dnn_extract_face(frame)
             if type(face) is np.ndarray:
-                face = cv2.resize(face, (350, 350))
-                face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
-                im = Image.fromarray(face, 'RGB')
-                img_array = np.array(im)
-                img_array = np.expand_dims(img_array, axis=0)
-                pred = model1.predict(img_array)
-                predition = np.squeeze(pred)
-                predIndex = np.argmax(predition)
-
-                #             name = 'None matching'
-                if (predition[predIndex] > 0.95):
-                    text = "{:.2f}%".format(predition[predIndex] * 100)
-                    name = str(faces[predIndex]) + ' ' + str(text)
-                    cv2.putText(frame, name, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
-                    result.append(Detection(Name=faces[predIndex], Prob=float(predition[predIndex])))
-                else:
-                    cv2.putText(frame, '', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
+            #     face = cv2.resize(face, (350, 350))
+            #     face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
+            #     im = Image.fromarray(face, 'RGB')
+            #     img_array = np.array(im)
+            #     img_array = np.expand_dims(img_array, axis=0)
+            #     pred = model1.predict(img_array)
+            #     predition = np.squeeze(pred)
+            #     predIndex = np.argmax(predition)
+            #
+            #     #             name = 'None matching'
+            #     if (predition[predIndex] > 0.95):
+            #         text = "{:.2f}%".format(predition[predIndex] * 100)
+            #         name = str(faces[predIndex]) + ' ' + str(text)
+            #         cv2.putText(frame, name, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
+                result.append(Detection(Name=faces[predIndex], Prob=float(predition[predIndex])))
+            #     else:
+            #         cv2.putText(frame, '', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
             else:
-                cv2.putText(frame, 'No face detected :(', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
-            #             cv2.putText(frame,'',(50,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
+                cv2.putText(frame, 'No Face Detected :(', (30, 40), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+            # #             cv2.putText(frame,'',(50,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
             self.result_queue.put(result)
             return av.VideoFrame.from_ndarray(frame, format="bgr24")
 
@@ -290,8 +336,13 @@ if choice == "Real Time Detection":
                                  mode=WebRtcMode.SENDRECV,
                                  rtc_configuration=RTC_CONFIGURATION,
                                  video_processor_factory=VideoProcessor,
-                                 media_stream_constraints={"video": True, "audio": False},
-                                 async_processing=True)
+                                 # media_stream_constraints={"video": True, "audio": False},
+                                 media_stream_constraints={
+                                     "video": {"width": 400, "ideal": 1200, "max": 1920},
+                                     "audio": False
+                                 },
+                                 async_processing=True
+                                 )
 
     st.markdown("""
                 <style>
@@ -326,6 +377,7 @@ if choice == "Real Time Detection":
                     labels_placeholder.table(result)
                 else:
                     break
+
 
 # @app.route('/video_feed')
 # def video_feed():
