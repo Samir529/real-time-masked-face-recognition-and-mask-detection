@@ -69,26 +69,26 @@ def dnn_extract_face(img):
             # return face
             face_list.append(face)
             label_list.append(label)
-
-            if choice == "Real Time Detection":
-                if type(face) is np.ndarray:
-                    face_new = cv2.resize(face, (350, 350))
-                    face_new = cv2.cvtColor(face_new, cv2.COLOR_BGR2RGB)
-                    im = Image.fromarray(face_new, 'RGB')
-                    img_array = np.array(im)
-                    img_array = np.expand_dims(img_array, axis=0)
-                    pred = model1.predict(img_array)
-                    predition = np.squeeze(pred)
-                    predIndex = np.argmax(predition)
-
-                    # name = 'None matching'
-                    if (predition[predIndex] > 0.95):
-                        text = "{:.2f}%".format(predition[predIndex] * 100)
-                        name = str(faces[predIndex]) + ' ' + str(text)
-                        # cv2.putText(img, name, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
-                        cv2.putText(img, name, (startX - 20, endY + 22), cv2.FONT_HERSHEY_COMPLEX, 0.8, color, 2)
-                    else:
-                        cv2.putText(img, '', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 255, 255), 2)
+            #
+            # if choice == "Real Time Detection":
+            #     if type(face) is np.ndarray:
+            #         face_new = cv2.resize(face, (350, 350))
+            #         face_new = cv2.cvtColor(face_new, cv2.COLOR_BGR2RGB)
+            #         im = Image.fromarray(face_new, 'RGB')
+            #         img_array = np.array(im)
+            #         img_array = np.expand_dims(img_array, axis=0)
+            #         pred = model1.predict(img_array)
+            #         predition = np.squeeze(pred)
+            #         predIndex = np.argmax(predition)
+            #
+            #         # name = 'None matching'
+            #         if (predition[predIndex] > 0.95):
+            #             text = "{:.2f}%".format(predition[predIndex] * 100)
+            #             name = str(faces[predIndex]) + ' ' + str(text)
+            #             # cv2.putText(img, name, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
+            #             cv2.putText(img, name, (startX - 20, endY + 22), cv2.FONT_HERSHEY_COMPLEX, 0.8, color, 2)
+            #         else:
+            #             cv2.putText(img, '', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 255, 255), 2)
                 # else:
                 #     cv2.putText(img, 'No Face Detected :(', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
                 #             cv2.putText(frame,'',(50,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
@@ -308,26 +308,26 @@ if choice == "Real Time Detection":
             # frame = frame[:, ::-1, :]
             x, face, l, predition, predIndex = dnn_extract_face(frame)
             if type(face) is np.ndarray:
-            #     face = cv2.resize(face, (350, 350))
-            #     face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
-            #     im = Image.fromarray(face, 'RGB')
-            #     img_array = np.array(im)
-            #     img_array = np.expand_dims(img_array, axis=0)
-            #     pred = model1.predict(img_array)
-            #     predition = np.squeeze(pred)
-            #     predIndex = np.argmax(predition)
-            #
-            #     #             name = 'None matching'
-            #     if (predition[predIndex] > 0.95):
-            #         text = "{:.2f}%".format(predition[predIndex] * 100)
-            #         name = str(faces[predIndex]) + ' ' + str(text)
-            #         cv2.putText(frame, name, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
-                result.append(Detection(Name=faces[predIndex], Prob=float(predition[predIndex])))
-            #     else:
-            #         cv2.putText(frame, '', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
+                face = cv2.resize(face, (350, 350))
+                face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
+                im = Image.fromarray(face, 'RGB')
+                img_array = np.array(im)
+                img_array = np.expand_dims(img_array, axis=0)
+                pred = model1.predict(img_array)
+                predition = np.squeeze(pred)
+                predIndex = np.argmax(predition)
+
+                #             name = 'None matching'
+                if (predition[predIndex] > 0.95):
+                    text = "{:.2f}%".format(predition[predIndex] * 100)
+                    name = str(faces[predIndex]) + ' ' + str(text)
+                    cv2.putText(frame, name, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
+                    result.append(Detection(Name=faces[predIndex], Prob=float(predition[predIndex])))
+                else:
+                    cv2.putText(frame, '', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2)
             else:
                 cv2.putText(frame, 'No Face Detected :(', (30, 40), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
-            # #             cv2.putText(frame,'',(50,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
+            #             cv2.putText(frame,'',(50,50),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
             self.result_queue.put(result)
             return av.VideoFrame.from_ndarray(frame, format="bgr24")
 
