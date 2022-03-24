@@ -207,7 +207,8 @@ if choice == "Take Snapshot":
 
         def recv(self, frame: av.VideoFrame) -> np.ndarray:
             frame = frame.to_ndarray(format="bgr24")
-            in_image = cv2.flip(frame, 1)
+            frame = cv2.flip(frame, 1)
+            in_image = frame
 
             with self.frame_lock:
                 self.in_image = in_image
