@@ -287,15 +287,14 @@ if choice == "About":
     st.write(
         "This is a Masked Face Recognition Application. You can detect your face by Uploading an Image or by Taking a Snapshot. You can also detect your face in real time by using the Real Time Detection. This application can also detect if you are wearing a mask or not. This system can detect and recognize multiple faces at a time.")
 
+
 if choice == "Real Time Detection":
     st.markdown('<h2 align="center">Real Time Masked Face Recognition</h2>', unsafe_allow_html=True)
-
 
     @st.cache(allow_output_mutation=True)
     class Detection(NamedTuple):
         Name: str
         Prob: float
-
 
     @st.cache(allow_output_mutation=True)
     class VideoProcessor(VideoProcessorBase):
@@ -367,6 +366,7 @@ if choice == "Real Time Detection":
                 }
                 </style>
                 """, unsafe_allow_html=True)
+
     if st.checkbox("Show the detected face", value=True):
         if webrtc_ctx.state.playing:
             labels_placeholder = st.empty()
