@@ -128,9 +128,8 @@ model1, model2 = load_model()
 # """
 # st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-faces = ['Abdur Samad', 'Ahsan Ahmed', 'Asef', 'Ashik', 'Azizul Hakim', 'DDS', 'Mahmud', 'Mayaz', 'Meheraj',
-         'Nayeem Khan', 'Nayem', 'Risul Islam Fahim', 'Saif', 'Saki', 'Samir', 'Shahtab', 'Shimul Rahman Fahad',
-         'Shourov', 'Shuvo', 'Sizan']
+faces = ['Abdur Samad', 'Ahsan Ahmed', 'Asef', 'Ashik', 'Azizul Hakim', 'DDS', 'Mahmud', 'Mayaz', 'Meheraj', 'Nayeem Khan', 'Nayem', 'Rezwanul Huq', 'Risul Islam Fahim', 'Saif', 'Saki', 'Samir', 'Shahtab', 'Shamim H Ripon', 'Shimul Rahman Fahad', 'Shourov', 'Shuvo', 'Sizan']
+
 
 RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
