@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
 import tensorflow as tf
+from PIL import Image
 import streamlit as st
 from streamlit_webrtc import VideoProcessorBase, webrtc_streamer, RTCConfiguration, WebRtcMode
-from PIL import Image
+from streamlit_option_menu import option_menu
 import av
 import queue
 from typing import List, NamedTuple
-from streamlit_option_menu import option_menu
 import threading
 from typing import Union
 
@@ -34,8 +34,8 @@ def dnn_extract_face(img):
     detections = net.forward()
     # detections = np.squeeze(net.forward())
     face = None
-    predition = None
-    predIndex = None
+    # predition = None
+    # predIndex = None
     face_list = []
     label_list = []
     for i in range(0, detections.shape[2]):
@@ -65,7 +65,7 @@ def dnn_extract_face(img):
             cv2.putText(img, label, (startX, startY - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
             cv2.rectangle(img, (startX, startY), (endX, endY), color, 2)
-            # cv2.rectangle(img, (startX, endY + 5), (endX, endY), color, cv2.FILLED)
+            # cv2.rectangle(img, (startX, endY), (endX, endY - 10), color, cv2.FILLED)
             # return face
             face_list.append(face)
             label_list.append(label)
@@ -128,39 +128,41 @@ model1, model2 = load_model()
 # """
 # st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-faces = ['Abdur Samad', 'Ahsan Ahmed', 'Asef', 'Ashik', 'Azizul Hakim', 'DDS', 'Mahmud', 'Mayaz', 'Meheraj', 'Nayeem Khan', 'Nayem', 'Rezwanul Huq', 'Risul Islam Fahim', 'Saif', 'Saki', 'Samir', 'Shahtab', 'Shamim H Ripon', 'Shimul Rahman Fahad', 'Shourov', 'Shuvo', 'Sizan']
-
 
 RTC_CONFIGURATION = RTCConfiguration(
-    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
-# {
-#   "iceServers": [
-#     {
-#       "urls": ["stun:openrelay.metered.ca:80"],
-#     },
-#     {
-#       "urls": ["turn:openrelay.metered.ca:80"],
-#       "username": "openrelayproject",
-#       "credential": "openrelayproject",
-#     },
-#     {
-#       "urls": ["turn:openrelay.metered.ca:443"],
-#       "username": "openrelayproject",
-#       "credential": "openrelayproject",
-#     },
-#     {
-#       "urls": ["turn:openrelay.metered.ca:443?transport=tcp"],
-#       "username": "openrelayproject",
-#       "credential": "openrelayproject",
-#     },
-#   ],
-# }
+    # {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+    {"iceServers": [
+        {
+            "urls": ["stun:openrelay.metered.ca:80"],
+        },
+        {
+            "urls": ["turn:openrelay.metered.ca:80"],
+            "username": "openrelayproject",
+            "credential": "openrelayproject",
+        },
+        {
+            "urls": ["turn:openrelay.metered.ca:443"],
+            "username": "openrelayproject",
+            "credential": "openrelayproject",
+        },
+        {
+            "urls": ["turn:openrelay.metered.ca:443?transport=tcp"],
+            "username": "openrelayproject",
+            "credential": "openrelayproject",
+        },
+        ],
+    }
 )
 # RTC_CONFIGURATION = RTCConfiguration(
 #     {"iceServers": [{"urls": ["stun:stun.xten.com:3478"]}]}
 # )
 
-choice = option_menu("Masked Face Recognition App", ["Upload Image", "Take Snapshot", "Real Time Detection", "About"],
+faces = ['Abdur Samad', 'Ahsan Ahmed', 'Asef', 'Ashik', 'Azizul Hakim', 'DDS', 'Mahmud', 'Mayaz', 'Meheraj',
+         'Nayeem Khan', 'Nayem', 'Rezwanul Huq', 'Risul Islam Fahim', 'Saif', 'Saki', 'Samir', 'Shahtab',
+         'Shamim H Ripon', 'Shimul Rahman Fahad', 'Shourov', 'Shuvo', 'Sizan']
+
+
+choice = option_menu("Masked Face Recognition Application", ["Upload Image", "Take a Snapshot", "Real Time Detection", "About"],
                      icons=['file-earmark-arrow-up', 'camera', 'camera-video', 'house'],
                      menu_icon="emoji-smile", default_index=0, orientation="horizontal",
                      styles={
@@ -171,6 +173,7 @@ choice = option_menu("Masked Face Recognition App", ["Upload Image", "Take Snaps
                          "nav-link-selected": {"background-color": "#02ab21"},
                         }
                      )
+
 
 if choice == "Upload Image":
     # st.subheader("Image")
@@ -184,6 +187,7 @@ if choice == "Upload Image":
         # with col1:
         st.image(image_file, width=250, caption='Uploaded Image.')
         img_array = np.array(image)
+        img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2RGB)
         # img_array, x, label, y, z = dnn_extract_face(img_array)
         img_array, x, label = dnn_extract_face(img_array)
         if not img_array:
@@ -205,19 +209,22 @@ if choice == "Upload Image":
                     </style> """, unsafe_allow_html=True)
                 # with col2:
                 st.image(imResize, width=200, caption='Extracted Face '+str(i))
-                st.markdown('<p class="font"><b>You are %s (Accuracy %.2f%%)</b></p>' % (
-                faces[predIndex], predition[predIndex] * 100), unsafe_allow_html=True)
+                if predition[predIndex] > 0.65:
+                    st.markdown('<p class="font"><b>You are %s (Accuracy %.2f%%)</b></p>' % (
+                        faces[predIndex], predition[predIndex] * 100), unsafe_allow_html=True)
 
-                # preds = model2.predict(predictimg)
-                # for pred in preds:
-                #     (mask, withoutMask) = pred
-                # label = "a mask" if mask > withoutMask else "no mask"
-                st.markdown('<p class="font"><b>Wearing %s</b></p>' % (label[i-1]), unsafe_allow_html=True)
-                st.markdown('-----------------------------------------------', unsafe_allow_html=True)
-                i += 1
+                    # preds = model2.predict(predictimg)
+                    # for pred in preds:
+                    #     (mask, withoutMask) = pred
+                    # label = "a mask" if mask > withoutMask else "no mask"
+                    st.markdown('<p class="font"><b>Wearing %s</b></p>' % (label[i-1]), unsafe_allow_html=True)
+                    st.markdown('-----------------------------------------------', unsafe_allow_html=True)
+                    i += 1
+                else:
+                    st.markdown('<p class="font"><b>Not found in the database.</b></p>', unsafe_allow_html=True)
 
 
-if choice == "Take Snapshot":
+if choice == "Take a Snapshot":
     class VideoProcessor2(VideoProcessorBase):
         frame_lock: threading.Lock
         in_image: Union[np.ndarray, None]
@@ -240,11 +247,7 @@ if choice == "Take Snapshot":
                           mode=WebRtcMode.SENDRECV,
                           rtc_configuration=RTC_CONFIGURATION,
                           video_processor_factory=VideoProcessor2,
-                          # media_stream_constraints={"video": True, "audio": False},
-                          media_stream_constraints={
-                              "video": {"width": 400, "ideal": 1200, "max": 1920},
-                              "audio": False
-                          },
+                          media_stream_constraints={"video": True, "audio": False},
                           async_processing=True
                           )
 
@@ -286,16 +289,19 @@ if choice == "Take Snapshot":
                                         </style> """, unsafe_allow_html=True)
                         # with col2:
                         st.image(imResize, width=200, caption='Extracted Face '+str(i))
-                        st.markdown('<p class="font"><b>You are %s (Accuracy %.2f%%)</b></p>' % (
-                        faces[predIndex], predition[predIndex] * 100), unsafe_allow_html=True)
+                        if predition[predIndex] > 0.65:
+                            st.markdown('<p class="font"><b>You are %s (Accuracy %.2f%%)</b></p>' % (
+                                faces[predIndex], predition[predIndex] * 100), unsafe_allow_html=True)
 
-                        # preds = model2.predict(predictimg)
-                        # for pred in preds:
-                        #     (mask, withoutMask) = pred
-                        # label = "a mask" if mask > withoutMask else "no mask"
-                        st.markdown('<p class="font"><b>Wearing %s</b></p>' % (label[i-1]), unsafe_allow_html=True)
-                        st.markdown('-----------------------------------------------', unsafe_allow_html=True)
-                        i += 1
+                            # preds = model2.predict(predictimg)
+                            # for pred in preds:
+                            #     (mask, withoutMask) = pred
+                            # label = "a mask" if mask > withoutMask else "no mask"
+                            st.markdown('<p class="font"><b>Wearing %s</b></p>' % (label[i-1]), unsafe_allow_html=True)
+                            st.markdown('-----------------------------------------------', unsafe_allow_html=True)
+                            i += 1
+                        else:
+                            st.markdown('<p class="font"><b>Not found in the database.</b></p>', unsafe_allow_html=True)
             else:
                 st.warning("No snapshot available yet. Please take a snapshot.")
 
@@ -356,15 +362,11 @@ if choice == "Real Time Detection":
             return av.VideoFrame.from_ndarray(frame, format="bgr24")
 
 
-    webrtc_ctx = webrtc_streamer(key="key",
+    webrtc_ctx = webrtc_streamer(key="realTime",
                                  mode=WebRtcMode.SENDRECV,
                                  rtc_configuration=RTC_CONFIGURATION,
                                  video_processor_factory=VideoProcessor,
-                                 # media_stream_constraints={"video": True, "audio": False},
-                                 media_stream_constraints={
-                                     "video": {"width": 400, "ideal": 1200, "max": 1920},
-                                     "audio": False
-                                 },
+                                 media_stream_constraints={"video": True, "audio": False},
                                  async_processing=True
                                  )
 
