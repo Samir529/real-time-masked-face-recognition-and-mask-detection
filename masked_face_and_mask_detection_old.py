@@ -1,8 +1,8 @@
+import streamlit as st
 import cv2
 import numpy as np
 import tensorflow as tf
 from PIL import Image
-import streamlit as st
 from streamlit_webrtc import VideoProcessorBase, webrtc_streamer, RTCConfiguration, WebRtcMode
 from streamlit_option_menu import option_menu
 import av
@@ -25,7 +25,6 @@ st.set_page_config(
 load_css('css/styles.css')
 
 
-@st.cache(allow_output_mutation=True)
 def dnn_extract_face(img):
     net = cv2.dnn.readNetFromCaffe("deploy.prototxt", "res10_300x300_ssd_iter_140000.caffemodel")
     (height, width) = img.shape[:2]
@@ -97,7 +96,7 @@ def dnn_extract_face(img):
     return face_list, face, label_list
 
 
-@st.cache(allow_output_mutation=True)
+@st.cache_resource
 def load_model():
     model1 = tf.keras.models.load_model('masked_face_detector.h5')
     model2 = tf.keras.models.load_model('mask_detector.h5')
@@ -318,12 +317,11 @@ if choice == "About":
 if choice == "Real Time Detection":
     st.markdown('<h2 align="center">Real Time Masked Face Recognition</h2>', unsafe_allow_html=True)
 
-    @st.cache(allow_output_mutation=True)
+    @st.cache_resource
     class Detection(NamedTuple):
         Name: str
         Prob: float
 
-    @st.cache(allow_output_mutation=True)
     class VideoProcessor(VideoProcessorBase):
         result_queue: "queue.Queue[List[Detection]]"
 
