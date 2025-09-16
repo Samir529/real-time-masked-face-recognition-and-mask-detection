@@ -18,7 +18,7 @@ def load_css(file_name):
 
 
 st.set_page_config(
-    page_title="Masked-Face-Recognition",
+    page_title="Live-Masked-Face-Recognition",
     page_icon="😷",
     layout="wide"
 )
